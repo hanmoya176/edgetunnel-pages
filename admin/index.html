@@ -9,7 +9,9 @@
     <script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/@keeex/qrcodejs-kx@1.0.2/qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&family=Orbitron:wght@700;800;900&display=swap"
+        rel="stylesheet">
     <!-- Leaflet Map Resources -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -9529,6 +9531,11 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     cursor: pointer;
                 }
 
+                body.is-result-dragging,
+                body.is-result-dragging * {
+                    user-select: none;
+                }
+
                 .result-row:hover td {
                     background: #f3f8f6;
                 }
@@ -10316,7 +10323,9 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     results: [],
                     selectedIds: new Set(),
                     nextResultId: 1,
-                    sort: { key: "latency", dir: "asc" }
+                    sort: { key: "latency", dir: "asc" },
+                    resultSelectionDrag: null,
+                    suppressResultClick: false
                 };
 
                 const $ = (selector) => document.querySelector(selector);
@@ -10406,6 +10415,11 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         startAllSpeedTests();
                     });
                     els.resultBody.addEventListener("click", (event) => {
+                        if (state.suppressResultClick) {
+                            state.suppressResultClick = false;
+                            return;
+                        }
+
                         const copyAddressBtn = event.target.closest("[data-copy-address]");
                         if (copyAddressBtn) {
                             event.stopPropagation();
@@ -10430,6 +10444,10 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         if (!row) return;
                         toggleResultSelected(row.dataset.resultId);
                     });
+                    els.resultBody.addEventListener("mousedown", startResultSelectionDrag);
+                    els.resultBody.addEventListener("mouseover", continueResultSelectionDrag);
+                    document.addEventListener("mouseup", finishResultSelectionDrag);
+                    window.addEventListener("blur", finishResultSelectionDrag);
                     els.selectAllHeader.addEventListener("change", () => {
                         if (els.selectAllHeader.checked) {
                             selectAllResults();
@@ -10442,7 +10460,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     els.clearSelectBtn.addEventListener("click", clearSelectedResults);
                     els.saveSelectedBtn.addEventListener("click", saveSelectedResults);
                     els.closeBestCFBtn.addEventListener("click", closeBestCFModule);
-      els.networkWarningConfirmBtn.addEventListener("click", confirmNetworkWarning);
+                    els.networkWarningConfirmBtn.addEventListener("click", confirmNetworkWarning);
                     document.querySelectorAll("[data-sort]").forEach((button) => {
                         button.addEventListener("click", () => setResultSort(button.dataset.sort));
                     });
@@ -11156,6 +11174,92 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     els.selectAllHeader.disabled = total === 0;
                     els.selectAllHeader.checked = total > 0 && selected === total;
                     els.selectAllHeader.indeterminate = selected > 0 && selected < total;
+                }
+
+                function startResultSelectionDrag(event) {
+                    if (event.button !== 0) return;
+                    const row = event.target.closest("[data-result-id]");
+                    if (!row || !els.resultBody.contains(row)) return;
+                    if (isInteractiveResultTarget(event.target)) return;
+
+                    event.preventDefault();
+                    state.resultSelectionDrag = {
+                        active: true,
+                        toggledIds: new Set(),
+                        lastRow: null
+                    };
+                    document.body.classList.add("is-result-dragging");
+                    toggleResultRowDuringDrag(row);
+                }
+
+                function continueResultSelectionDrag(event) {
+                    const drag = state.resultSelectionDrag;
+                    if (!drag || !drag.active) return;
+                    if ((event.buttons & 1) !== 1) {
+                        finishResultSelectionDrag();
+                        return;
+                    }
+
+                    const row = event.target.closest("[data-result-id]");
+                    if (!row || !els.resultBody.contains(row)) return;
+                    toggleResultRowDuringDrag(row);
+                }
+
+                function finishResultSelectionDrag() {
+                    const drag = state.resultSelectionDrag;
+                    if (!drag || !drag.active) return;
+                    drag.active = false;
+                    document.body.classList.remove("is-result-dragging");
+                    state.suppressResultClick = true;
+                    window.setTimeout(() => {
+                        state.suppressResultClick = false;
+                    }, 0);
+                }
+
+                function toggleResultRowDuringDrag(row) {
+                    const drag = state.resultSelectionDrag;
+                    if (!drag || !drag.active) return;
+                    const rows = Array.from(els.resultBody.querySelectorAll("[data-result-id]"));
+                    const currentIndex = rows.indexOf(row);
+                    const lastIndex = drag.lastRow ? rows.indexOf(drag.lastRow) : -1;
+
+                    if (currentIndex !== -1 && lastIndex !== -1) {
+                        const start = Math.min(currentIndex, lastIndex);
+                        const end = Math.max(currentIndex, lastIndex);
+                        for (let index = start; index <= end; index += 1) {
+                            toggleSingleResultRowDuringDrag(rows[index]);
+                        }
+                    } else {
+                        toggleSingleResultRowDuringDrag(row);
+                    }
+                    drag.lastRow = row;
+                }
+
+                function toggleSingleResultRowDuringDrag(row) {
+                    const drag = state.resultSelectionDrag;
+                    if (!drag || !drag.active || !row) return;
+                    const id = row.dataset.resultId;
+                    if (!id || drag.toggledIds.has(id)) return;
+
+                    const selected = !state.selectedIds.has(String(id));
+                    if (selected) {
+                        state.selectedIds.add(String(id));
+                    } else {
+                        state.selectedIds.delete(String(id));
+                    }
+                    drag.toggledIds.add(id);
+                    applyResultRowSelection(row, selected);
+                    updateSelectionState();
+                }
+
+                function applyResultRowSelection(row, selected) {
+                    row.classList.toggle("is-selected", selected);
+                    const checkbox = row.querySelector("[data-select-id]");
+                    if (checkbox) checkbox.checked = selected;
+                }
+
+                function isInteractiveResultTarget(target) {
+                    return Boolean(target.closest("button, input, select, textarea, a, label"));
                 }
 
                 function setResultSelected(id, selected) {
