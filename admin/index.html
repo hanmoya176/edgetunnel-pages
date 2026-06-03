@@ -8993,21 +8993,64 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     padding: 18px;
                 }
 
+                .network-panel {
+                    display: grid;
+                    gap: 14px;
+                    padding: 16px;
+                    border: 1px solid var(--line);
+                    border-radius: var(--radius);
+                    background: var(--panel);
+                    box-shadow: var(--shadow);
+                }
+
                 .network-grid {
                     display: grid;
-                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
                     gap: 12px;
                 }
 
                 .network-item {
+                    position: relative;
                     display: grid;
-                    grid-template-columns: 68px minmax(0, 1fr) auto;
+                    grid-template-columns: auto minmax(0, 1fr) auto;
                     align-items: center;
                     gap: 12px;
-                    padding: 13px;
+                    min-height: 82px;
+                    padding: 14px 14px 14px 18px;
+                    overflow: hidden;
                     border: 1px solid var(--line);
                     border-radius: var(--radius);
                     background: var(--panel-soft);
+                }
+
+                .network-item::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0 auto 0 0;
+                    width: 4px;
+                    background: #94a3b8;
+                }
+
+                .network-item.is-loading::before {
+                    background: var(--blue);
+                }
+
+                .network-item.is-ok {
+                    border-color: #b9e8d3;
+                    background: #f6fdf9;
+                }
+
+                .network-item.is-ok::before {
+                    background: var(--green);
+                }
+
+                .network-item.is-failed {
+                    border-color: #f2b8b5;
+                    background: #fff8f7;
+                }
+
+                .network-item.is-failed::before {
+                    background: var(--red);
                 }
 
                 .network-item.is-hidden {
@@ -9016,23 +9059,40 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
                 .network-kind {
                     display: grid;
-                    width: 56px;
-                    height: 56px;
+                    width: 58px;
+                    height: 38px;
                     place-items: center;
                     border-radius: var(--radius);
                     background: #eef4ff;
                     color: var(--blue);
                     font-family: var(--mono);
                     font-weight: 800;
-                    font-size: 15px;
+                    font-size: 14px;
+                }
+
+                .network-copy {
+                    display: grid;
+                    gap: 5px;
+                    min-width: 0;
                 }
 
                 .network-address {
                     min-width: 0;
                     overflow-wrap: anywhere;
                     font-family: var(--mono);
-                    font-size: 14px;
-                    font-weight: 680;
+                    font-size: 15px;
+                    font-weight: 720;
+                    line-height: 1.35;
+                }
+
+                .network-note {
+                    min-width: 0;
+                    color: var(--muted);
+                    font-size: 12px;
+                    line-height: 1.35;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                 }
 
                 .muted {
@@ -9881,6 +9941,16 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     color: var(--muted);
                 }
 
+                html.dark-mode .network-item.is-ok {
+                    border-color: rgba(52, 211, 153, 0.36);
+                    background: rgba(52, 211, 153, 0.08);
+                }
+
+                html.dark-mode .network-item.is-failed {
+                    border-color: rgba(248, 113, 113, 0.36);
+                    background: rgba(248, 113, 113, 0.08);
+                }
+
                 html.dark-mode .shade-line:nth-child(odd) {
                     background: #0f172a;
                 }
@@ -10043,16 +10113,16 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     }
 
                     .network-item {
-                        grid-template-columns: 1fr;
+                        grid-template-columns: auto minmax(0, 1fr) auto;
                     }
 
                     .network-kind {
-                        width: 100%;
-                        height: 40px;
+                        width: 58px;
+                        height: 38px;
                     }
 
                     .network-address {
-                        text-align: center;
+                        font-size: 14px;
                     }
 
                     .editor-body {
@@ -10096,18 +10166,26 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
                 <div class="layout">
                     <div class="stack">
-                        <section class="network-grid" aria-label="网络环境">
-                            <article class="network-item" id="ipv4Card">
-                                <div class="network-kind">IPv4</div>
-                                <strong class="network-address" id="ipv4Value">检测中</strong>
-                                <span class="tag idle" id="ipv4Tag">等待</span>
-                            </article>
+                        <section class="network-panel" aria-label="网络环境">
+                            <div class="network-grid">
+                                <article class="network-item" id="ipv4Card">
+                                    <div class="network-kind">IPv4</div>
+                                    <div class="network-copy">
+                                        <strong class="network-address" id="ipv4Value">检测中</strong>
+                                        <span class="network-note">识别线路</span>
+                                    </div>
+                                    <span class="tag idle" id="ipv4Tag">等待</span>
+                                </article>
 
-                            <article class="network-item" id="ipv6Card">
-                                <div class="network-kind">IPv6</div>
-                                <strong class="network-address" id="ipv6Value">检测中</strong>
-                                <span class="tag idle" id="ipv6Tag">等待</span>
-                            </article>
+                                <article class="network-item" id="ipv6Card">
+                                    <div class="network-kind">IPv6</div>
+                                    <div class="network-copy">
+                                        <strong class="network-address" id="ipv6Value">检测中</strong>
+                                        <span class="network-note">识别线路</span>
+                                    </div>
+                                    <span class="tag idle" id="ipv6Tag">等待</span>
+                                </article>
+                            </div>
                         </section>
                     </div>
 
@@ -10304,8 +10382,20 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 }
                 const TLS_PORTS = [443, 2053, 2083, 2087, 2096, 8443];
                 const DETECT_ENDPOINTS = {
-                    ipv4: "https://68100000.nip.cmliussss.hidns.vip",
-                    ipv6: "https://2606-4700--.nip.cmliussss.hidns.vip"
+                    ipv4: [
+                        "https://671F0401.nip.cmliussss.hidns.vip",
+                        "https://6CA2C001.nip.cmliussss.hidns.vip",
+                        "https://BC726001.nip.cmliussss.hidns.vip",
+                        "https://68100001.nip.cmliussss.hidns.vip",
+                        "https://68180001.nip.cmliussss.hidns.vip",
+                        "https://AC400001.nip.cmliussss.hidns.vip"
+                    ],
+                    ipv6: [
+                        "https://2606-4700--1.nip.cmliussss.hidns.vip",
+                        "https://2606-4700--1000-1.nip.cmliussss.hidns.vip",
+                        "https://2606-4700--2000-1.nip.cmliussss.hidns.vip",
+                        "https://2606-4700--3000-1.nip.cmliussss.hidns.vip"
+                    ]
                 };
                 const IP_LIBRARIES = [
                     { label: "CF官方列表v4", family: "ipv4", url: "https://cf.090227.xyz/ips-v4" },
@@ -10553,7 +10643,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                             } else {
                                 state.network[family] = {
                                     status: "failed",
-                                    error: result.reason && result.reason.message ? result.reason.message : "检测失败"
+                                    error: result.reason && result.reason.message ? result.reason.message : "不具备优选条件"
                                 };
                             }
                         });
@@ -10599,12 +10689,12 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 }
 
                 async function detectStack(family) {
-                    const base = DETECT_ENDPOINTS[family];
-                    const data = await fetchJson(`${base}/ip.json?_t=${Date.now()}`, 6500);
+                    const { endpoint, data } = await fetchJsonFromFastestEndpoint(DETECT_ENDPOINTS[family], "ip.json", 6500);
                     const allowed = data.country === "CN";
                     return {
                         status: "done",
                         allowed,
+                        endpoint,
                         ip: data.ip || "",
                         ipType: data.ipType || family,
                         country: data.country || "未知",
@@ -10616,25 +10706,22 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 }
 
                 async function loadLocations() {
-                    const bases = [];
-                    if (state.ipv4) bases.push(DETECT_ENDPOINTS.ipv4);
-                    if (state.ipv6) bases.push(DETECT_ENDPOINTS.ipv6);
+                    const endpoints = [];
+                    if (state.ipv4 && state.network.ipv4 && state.network.ipv4.endpoint) endpoints.push(state.network.ipv4.endpoint);
+                    if (state.ipv6 && state.network.ipv6 && state.network.ipv6.endpoint) endpoints.push(state.network.ipv6.endpoint);
 
-                    for (const base of bases) {
-                        try {
-                            const locations = await fetchJson(`${base}/locations?_t=${Date.now()}`, 8000);
-                            if (!Array.isArray(locations)) continue;
-                            state.locations = locations;
-                            state.locationsByIata = new Map(
-                                locations
-                                    .filter((item) => item && item.iata)
-                                    .map((item) => [String(item.iata).toUpperCase(), item])
-                            );
-                            return;
-                        } catch (error) {
-                            state.locations = [];
-                            state.locationsByIata = new Map();
-                        }
+                    try {
+                        const { data: locations } = await fetchJsonFromFastestEndpoint([...new Set(endpoints)], "locations", 8000);
+                        if (!Array.isArray(locations)) throw new Error("locations 响应格式无效");
+                        state.locations = locations;
+                        state.locationsByIata = new Map(
+                            locations
+                                .filter((item) => item && item.iata)
+                                .map((item) => [String(item.iata).toUpperCase(), item])
+                        );
+                    } catch (error) {
+                        state.locations = [];
+                        state.locationsByIata = new Map();
                     }
                 }
 
@@ -10642,25 +10729,43 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     const card = family === "ipv4" ? els.ipv4Card : els.ipv6Card;
                     const value = family === "ipv4" ? els.ipv4Value : els.ipv6Value;
                     const tag = family === "ipv4" ? els.ipv4Tag : els.ipv6Tag;
+                    const note = card.querySelector(".network-note");
+                    card.classList.remove("is-loading", "is-ok", "is-failed", "is-unavailable");
 
                     if (!info || info.status === "loading") {
                         card.classList.remove("is-hidden");
+                        card.classList.add("is-loading");
                         value.textContent = "检测中";
+                        if (note) note.textContent = "识别线路";
                         tag.className = "tag idle";
                         tag.textContent = "等待";
                         return;
                     }
 
-                    if (info.status === "failed" || !info.allowed) {
-                        card.classList.add("is-hidden");
-                        value.textContent = "不可用";
+                    if (info.status === "failed") {
+                        card.classList.remove("is-hidden");
+                        card.classList.add("is-failed");
+                        value.textContent = "不具备优选条件";
+                        if (note) note.textContent = "线路不可用";
                         tag.className = "tag bad";
-                        tag.textContent = info.status === "failed" ? "失败" : (info.country || "非CN");
+                        tag.textContent = "未就绪";
+                        return;
+                    }
+
+                    if (!info.allowed) {
+                        card.classList.add("is-hidden");
+                        card.classList.add("is-unavailable");
+                        value.textContent = "不可用";
+                        if (note) note.textContent = "非CN网络";
+                        tag.className = "tag bad";
+                        tag.textContent = info.country || "非CN";
                         return;
                     }
 
                     card.classList.remove("is-hidden");
+                    card.classList.add("is-ok");
                     value.textContent = maskIpForDisplay(info.ip, info.ipType || family);
+                    if (note) note.textContent = info.preferredType || preferredTypeFromCnIspCode(info.cnIspCode);
                     tag.className = "tag ok";
                     tag.textContent = `${info.country || "未知"} · ${String(info.cnIspCode || "unknown").toUpperCase()}`;
                 }
@@ -11857,6 +11962,45 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     const response = await fetchWithTimeout(url, { method: "GET", timeout });
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return response.json();
+                }
+
+                async function fetchJsonFromFastestEndpoint(endpoints, path, timeout) {
+                    const bases = Array.from(new Set((Array.isArray(endpoints) ? endpoints : [endpoints]).filter(Boolean)));
+                    if (!bases.length) throw new Error("无可用检测地址");
+
+                    const run = { stopped: false, controllers: new Set() };
+                    let pending = bases.length;
+                    let lastError = null;
+
+                    return new Promise((resolve, reject) => {
+                        bases.forEach((endpoint) => {
+                            fetchJsonFromEndpoint(endpoint, path, timeout, run)
+                                .then((result) => {
+                                    if (run.stopped) return;
+                                    run.stopped = true;
+                                    for (const controller of run.controllers) controller.abort();
+                                    resolve(result);
+                                })
+                                .catch((error) => {
+                                    if (run.stopped) return;
+                                    lastError = error;
+                                    pending -= 1;
+                                    if (pending === 0) reject(lastError || new Error("检测失败"));
+                                });
+                        });
+                    });
+                }
+
+                async function fetchJsonFromEndpoint(endpoint, path, timeout, run) {
+                    const normalizedPath = String(path || "").replace(/^\/+/, "");
+                    const response = await fetchWithTimeout(`${endpoint}/${normalizedPath}?_t=${Date.now()}`, {
+                        method: "GET",
+                        timeout,
+                        run
+                    });
+                    if (response.status !== 200) throw new Error(`${endpoint} HTTP ${response.status}`);
+                    const data = await response.json();
+                    return { endpoint, data };
                 }
 
                 async function fetchText(url, timeout) {
