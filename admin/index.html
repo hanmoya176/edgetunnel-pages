@@ -15233,6 +15233,13 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 				region: '国际',
 				icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#FF0000" d="M23.5 6.19a3 3 0 0 0-2.12-2.14c-1.87-.5-9.38-.5-9.38-.5s-7.5 0-9.38.5A3 3 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3 3 0 0 0 2.12 2.14c1.87.5 9.38.5 9.38.5s7.5 0 9.38-.5a3 3 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81M9.55 15.57V8.43L15.82 12z"></path></svg>',
 				url: 'https://www.youtube.com/favicon.ico'
+			},
+			{
+				name: 'Netflix',
+				region: '国际',
+				icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#E50914" d="M5.398 0v.006c3.028 8.556 3.912 11.56 5.594 15.098C13.498 14.466 14.5 10.11 14.5 6.608V0h-2.05v6.13c0 2.672-.572 5.486-2.37 8.264C8.272 11.616 7.27 7.96 7.27 4.458V0H5.4zm7.274 0v7.58c0 3.476 1.14 7.214 3.088 10.236C14.292 15.03 15.282 11.58 15.282 8.08V0h-2.61z"/></svg>',
+				url: 'https://www.netflix.com/favicon.ico',
+				netflixCheck: true
 			}
 		];
 
@@ -15307,12 +15314,25 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
 		// 测试延迟
 		async function testLatency(site) {
-			const start = Date.now();
 			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), latencyFetchTimeoutMs);
+			const timeoutId = setTimeout(() => controller.abort(), site.netflixCheck ? 25000 : latencyFetchTimeoutMs);
 			latencyFetchControllers.add(controller);
 
 			try {
+				// Netflix 解锁检测走后端代理接口
+				if (site.netflixCheck) {
+					const nfRes = await fetch(`/admin/check-netflix?_t=${Date.now()}`, { signal: controller.signal });
+					const nfData = await nfRes.json();
+					const latency = nfData.responseTime || -1;
+					if (nfData.success && nfData.status === 'full') {
+						return { latency, nfStatus: 'full', nfLabel: '✅ 完整解锁', nfColor: '#10b981', nfCountry: nfData.country || '', nfIP: nfData.ip || '' };
+					} else if (nfData.success && nfData.status === 'self') {
+						return { latency, nfStatus: 'self', nfLabel: '🟡 仅自制剧', nfColor: '#f59e0b', nfCountry: nfData.country || '', nfIP: nfData.ip || '' };
+					} else {
+						return { latency: -1, nfStatus: nfData.status || 'none', nfLabel: '❌ 未解锁', nfColor: '#ef4444', nfDetail: nfData.detail || nfData.error || '' };
+					}
+				}
+				const start = Date.now();
 				await fetch(site.url + '?t=' + Date.now(), {
 					method: 'HEAD',
 					cache: 'no-cache',
@@ -15323,7 +15343,8 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 				const latency = Date.now() - start;
 				return latency;
 			} catch (error) {
-				return -1; // 连接失败
+				if (site.netflixCheck) return { latency: -1, nfStatus: 'error', nfLabel: '⚠️ 检测失败', nfColor: '#6b7280', nfDetail: error.name === 'AbortError' ? '超时' : error.message };
+				return -1;
 			} finally {
 				clearTimeout(timeoutId);
 				latencyFetchControllers.delete(controller);
@@ -15370,6 +15391,30 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
 		// 更新延迟显示
 		function updateLatencyDisplay(siteName, latencies) {
+			// Netflix 卡片特殊显示
+			if (siteName === 'netflix' && latencies.length > 0) {
+				const lastResult = latencies[latencies.length - 1];
+				if (typeof lastResult === 'object' && lastResult.nfStatus) {
+					const el = document.getElementById('latency-netflix');
+					if (el) {
+						const latencyEl = el.querySelector('.latency-value') || el;
+						if (lastResult.nfStatus === 'full' || lastResult.nfStatus === 'self') {
+							latencyEl.innerHTML = `<span style="color:${lastResult.nfColor};font-weight:700;font-size:12px;">${lastResult.nfLabel}</span>`;
+							el.style.borderLeftColor = lastResult.nfColor;
+							// 更新卡片区域显示
+							const regionEl = el.closest('.latency-card')?.querySelector('.latency-card-region');
+							if (regionEl && lastResult.nfCountry) {
+								regionEl.textContent = lastResult.nfCountry;
+								regionEl.style.color = lastResult.nfColor;
+							}
+						} else {
+							latencyEl.innerHTML = `<span style="color:${lastResult.nfColor};font-weight:700;font-size:12px;">${lastResult.nfLabel}</span>`;
+							el.style.borderLeftColor = lastResult.nfColor;
+						}
+						return;
+					}
+				}
+			}
 			const valueElement = document.getElementById(`latency-${siteName}`);
 			const pathElement = document.getElementById(`path-${siteName}`);
 			const cursorElement = document.getElementById(`cursor-${siteName}`);
@@ -25597,3 +25642,4 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 </body>
 
 </html>
+
