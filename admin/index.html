@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -11774,7 +11774,8 @@
 			</div>
 
 			<script>
-				function syncEmbeddedTheme() {
+				const WORKER_BASE = window.parent.location.origin;
+			function syncEmbeddedTheme() {
 					try {
 						const parentDoc = window.parent && window.parent.document;
 						const parentDark = Boolean(parentDoc && (
@@ -13708,24 +13709,21 @@
 					if (!result || result.netflixState === "testing") return;
 					result.netflixState = "testing";
 					renderResults();
-					const controller = new AbortController();
-					const timeout = setTimeout(() => controller.abort(), 10000);
-					Promise.all([
-						fetch('https://www.netflix.com/title/70143836', { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: controller.signal }).then(r => r.type === 'opaque').catch(() => false),
-						fetch('https://www.netflix.com/title/80018263', { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: controller.signal }).then(r => r.type === 'opaque').catch(() => false)
-					]).then(([fullUnlock, selfMade]) => {
-						clearTimeout(timeout);
-						if (fullUnlock && selfMade) { result.netflixResult = '✅ 已解锁'; }
-						else if (selfMade) { result.netflixResult = '⚠️ 自制剧'; }
-						else { result.netflixResult = '❌ 未解锁'; }
-						result.netflixState = "done";
-						renderResults();
-					}).catch(err => {
-						clearTimeout(timeout);
-						result.netflixResult = err.name === 'AbortError' ? '❌ 超时' : '❌ 失败';
-						result.netflixState = "failed";
-						renderResults();
-					});
+					fetch(WORKER_BASE + '/admin/check-netflix?_t=' + Date.now(), { method: 'GET', headers: { 'Cookie': window.parent.document.cookie || '' }, cache: 'no-store' })
+						.then(r => r.json())
+						.then(data => {
+							if (data.error) { result.netflixResult = '❌ ' + data.error; result.netflixState = "failed"; }
+							else if (data.unlock === '全部解锁') { result.netflixResult = '✅ 全部解锁' + (data.region ? ' [' + data.region + ']' : ''); result.netflixState = "done"; }
+							else if (data.unlock === '自制剧') { result.netflixResult = '⚠️ 自制剧' + (data.region ? ' [' + data.region + ']' : ''); result.netflixState = "done"; }
+							else if (data.unlock === '未解锁') { result.netflixResult = '❌ 未解锁'; result.netflixState = "done"; }
+							else { result.netflixResult = '❓ ' + data.unlock; result.netflixState = "done"; }
+							renderResults();
+						})
+						.catch(err => {
+							result.netflixResult = '❌ 网络错误';
+							result.netflixState = "failed";
+							renderResults();
+						});
 				}
 
 				function renderSpeedCell(item, index) {
