@@ -11723,7 +11723,7 @@
 											<th style="width: 15%"><button class="sort-header" type="button"
 													data-sort="speed">速度(Mbps) <span class="sort-mark"
 														data-sort-mark="speed"></span></button></th>
-													<th style="width: 12%"><button class="sort-header" type="button" data-sort="netflix">解锁检测 <span class="sort-mark" data-sort-mark="netflix"></span></button></th>
+													<th style="width: 12%">解锁检测</th>
 										</tr>
 									</thead>
 									<tbody id="resultBody">
@@ -13015,7 +13015,7 @@
 		  <td>${renderCountryCell(item.country)}</td>
 		  <td>${escapeHtml(item.colo || "未知")}</td>
 		  <td>${item.latency}ms</td>
-		  <td>${renderSpeedCell(item, index)}</td>  <td>${renderNetflixCell(item, index)}</td>
+		  <td>${renderSpeedCell(item, index)}  <td>${renderNetflixCell(item, index)}</td>
 		</tr>`;
 					}).join("");
 					updateSelectionState();
@@ -13708,22 +13708,13 @@
 					if (!result || result.netflixState === "testing") return;
 					result.netflixState = "testing";
 					renderResults();
-					
-					const address = result.address || '';
-					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
-					
-					fetch(`https://hanmoya.cc.cd/admin/check-netflix?ip=${encodeURIComponent(ip)}&_=${Date.now()}`)
+					fetch('/admin/check-netflix?_=${Date.now()}')
 						.then(r => r.json())
 						.then(data => {
-							if (data.error) {
-								result.netflixResult = '❌ ' + data.error;
-							} else if (data.unlock === '已解锁') {
-								result.netflixResult = '✅ 已解锁 ' + (data.region || '');
-							} else if (data.unlock === '自制剧') {
-								result.netflixResult = '⚠️ 自制剧';
-							} else {
-								result.netflixResult = '❌ ' + data.unlock;
-							}
+							if (data.error) { result.netflixResult = '❌ ' + data.error; }
+							else if (data.unlock === '已解锁') { result.netflixResult = '✅ 已解锁 ' + (data.region || ''); }
+							else if (data.unlock === '自制剧') { result.netflixResult = '⚠️ 自制剧'; }
+							else { result.netflixResult = '❌ ' + data.unlock; }
 							result.netflixState = "done";
 							renderResults();
 						})
@@ -13733,6 +13724,7 @@
 							renderResults();
 						});
 				}
+
 				function renderSpeedCell(item, index) {
 					const isBatchTarget = Boolean(state.speedBatchDrag && state.speedBatchDrag.active && state.speedBatchDrag.seen.has(index));
 					if (item.speedState === "testing") {
@@ -25933,8 +25925,3 @@
 </body>
 
 </html>
-
-
-
-
-
