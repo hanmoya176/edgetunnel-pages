@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -11723,11 +11723,12 @@
 											<th style="width: 15%"><button class="sort-header" type="button"
 													data-sort="speed">速度(Mbps) <span class="sort-mark"
 														data-sort-mark="speed"></span></button></th>
+													<th style="width: 12%"><button class="sort-header" type="button" data-sort="netflix">解锁检测 <span class="sort-mark" data-sort-mark="netflix"></span></button></th>
 										</tr>
 									</thead>
 									<tbody id="resultBody">
 										<tr>
-											<td class="empty" colspan="8">暂无结果</td>
+											<td class="empty" colspan="9">暂无结果</td>
 										</tr>
 									</tbody>
 								</table>
@@ -11747,19 +11748,7 @@
 					</div>
 				</div>
 
-				
-    <section style="margin-top: 24px;">
-        <div class="panel-head">
-            <h2 class="panel-title">🎬 Netflix 解锁检测</h2>
-            <button class="btn success" id="checkNetflixBtn" type="button" onclick="checkNetflixUnlock()" style="white-space:nowrap;">检测</button>
-        </div>
-        <div id="netflixResult" style="display:none; margin-top: 12px; padding: 12px; border-radius: 8px; background: #f8f9fa;">
-            <div id="netflixStatus" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;"></div>
-            <div id="netflixDetail" style="font-size: 13px; color: #666;"></div>
-        </div>
-    </section>
-
-<p class="bestcf-credit">
+				<p class="bestcf-credit">
 					© BestCF · 在线优选得以实现，离不开巨人的肩膀。感谢 @ktff、@Lfreea、<a href="https://hidoha.net"
 						target="_blank" rel="noopener noreferrer">HiDNS</a> 的探索与贡献。
 				</p>
@@ -13008,7 +12997,7 @@
 					syncOpenResultFilterMenu();
 					syncSelectionWithResults();
 					if (!state.results.length || !rows.length) {
-						els.resultBody.innerHTML = `<tr><td class="empty" colspan="8">${state.results.length ? "筛选后暂无结果" : "暂无结果"}</td></tr>`;
+						els.resultBody.innerHTML = `<tr><td class="empty" colspan="9">${state.results.length ? "筛选后暂无结果" : "暂无结果"}</td></tr>`;
 						updateSelectionState();
 						updateActionAvailability();
 						return;
@@ -13026,7 +13015,7 @@
 		  <td>${renderCountryCell(item.country)}</td>
 		  <td>${escapeHtml(item.colo || "未知")}</td>
 		  <td>${item.latency}ms</td>
-		  <td>${renderSpeedCell(item, index)}</td>
+		  <td>${renderSpeedCell(item, index)}</td>\n\t\t\t\t  <td><button class="btn netflix-check-btn" type="button" onclick="checkNetflixUnlock(this, '${safeAddress}')" style="padding:2px 8px;font-size:11px;background:#e50914;color:#fff;border:none;border-radius:4px;cursor:pointer;">检测</button><span class="netflix-result" style="margin-left:4px;font-size:11px;"></span></td>
 		</tr>`;
 					}).join("");
 					updateSelectionState();
@@ -13708,6 +13697,25 @@
 					return 0;
 				}
 
+				function checkNetflixUnlock(btn, address) {
+					const span = btn.nextElementSibling;
+					btn.disabled = true;
+					btn.textContent = '检测中...';
+					span.textContent = '';
+					span.style.color = '';
+					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
+					fetch('/admin/check-netflix?ip=' + encodeURIComponent(ip) + '&_=' + Date.now())
+						.then(r => r.json())
+						.then(data => {
+							if (data.error) { span.textContent = '❌ ' + data.error; span.style.color = '#ef4444'; }
+							else if (data.unlock === '已解锁') { span.textContent = '✅ 已解锁 ' + (data.region || ''); span.style.color = '#10b981'; }
+							else if (data.unlock === '自制剧') { span.textContent = '⚠️ 自制剧'; span.style.color = '#f59e0b'; }
+							else { span.textContent = '❌ ' + data.unlock; span.style.color = '#ef4444'; }
+							btn.disabled = false;
+							btn.textContent = '重新检测';
+						})
+						.catch(err => { span.textContent = '❌ 失败'; span.style.color = '#ef4444'; btn.disabled = false; btn.textContent = '重新检测'; });
+				}
 				function renderSpeedCell(item, index) {
 					const isBatchTarget = Boolean(state.speedBatchDrag && state.speedBatchDrag.active && state.speedBatchDrag.seen.has(index));
 					if (item.speedState === "testing") {
@@ -25904,69 +25912,10 @@
 			showToast('🎉 24小时内不会再提示', 'info');
 		}
 
-	
-<script>
-async function checkNetflixUnlock() {
-    const btn = document.getElementById('checkNetflixBtn');
-    const resultDiv = document.getElementById('netflixResult');
-    const statusDiv = document.getElementById('netflixStatus');
-    const detailDiv = document.getElementById('netflixDetail');
-    
-    btn.disabled = true;
-    btn.textContent = '检测中...';
-    resultDiv.style.display = 'block';
-    statusDiv.textContent = '正在检测...';
-    statusDiv.style.color = '#f59e0b';
-    detailDiv.textContent = '';
-    
-    try {
-        const params = new URLSearchParams();
-        params.set('socks5', currentConfig.PROXYIP || '127.0.0.1:443');
-        const resp = await fetch('/admin/check-netflix?' + params.toString());
-        const data = await resp.json();
-        
-        if (data.success) {
-            if (data.status === 'full') {
-                statusDiv.textContent = '✅ 完整解锁';
-                statusDiv.style.color = '#10b981';
-                resultDiv.style.background = '#ecfdf5';
-            } else if (data.status === 'self') {
-                statusDiv.textContent = '🟡 仅自制剧';
-                statusDiv.style.color = '#f59e0b';
-                resultDiv.style.background = '#fffbeb';
-            } else if (data.status === 'none') {
-                statusDiv.textContent = '❌ 未解锁';
-                statusDiv.style.color = '#ef4444';
-                resultDiv.style.background = '#fef2f2';
-            } else if (data.status === 'blocked') {
-                statusDiv.textContent = '🚫 封锁';
-                statusDiv.style.color = '#ef4444';
-                resultDiv.style.background = '#fef2f2';
-            } else {
-                statusDiv.textContent = '⚠️ ' + (data.detail || '未知状态');
-                statusDiv.style.color = '#f59e0b';
-                resultDiv.style.background = '#fffbeb';
-            }
-            detailDiv.textContent = '响应耗时: ' + data.responseTime + 'ms | 详情: ' + (data.detail || data.status);
-        } else {
-            statusDiv.textContent = '❌ 检测失败';
-            statusDiv.style.color = '#ef4444';
-            detailDiv.textContent = data.error || '未知错误';
-            resultDiv.style.background = '#fef2f2';
-        }
-    } catch (e) {
-        statusDiv.textContent = '❌ 请求异常';
-        statusDiv.style.color = '#ef4444';
-        detailDiv.textContent = e.message;
-        resultDiv.style.background = '#fef2f2';
-    }
-    
-    btn.disabled = false;
-    btn.textContent = '检测';
-}
-</script>
-
-</script>
+	</script>
 </body>
 
 </html>
+
+
+
