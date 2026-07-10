@@ -13015,7 +13015,7 @@
 		  <td>${renderCountryCell(item.country)}</td>
 		  <td>${escapeHtml(item.colo || "未知")}</td>
 		  <td>${item.latency}ms</td>
-		  <td>${renderSpeedCell(item, index)}</td>  <td><button class="btn netflix-check-btn" type="button" onclick="checkNetflixUnlock(this, '${safeAddress}')" style="padding:2px 8px;font-size:11px;background:#e50914;color:#fff;border:none;border-radius:4px;cursor:pointer;">检测</button><span class="netflix-result" style="margin-left:4px;font-size:11px;"></span></td>
+		  <td>${renderSpeedCell(item, index)}</td>  <td>${renderNetflixCell(item, index)}</td>
 		</tr>`;
 					}).join("");
 					updateSelectionState();
@@ -13697,12 +13697,32 @@
 					return 0;
 				}
 
+				function renderNetflixCell(item, index) {
+					const address = item.address || '';
+					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
+					state.netflixState = state.netflixState || {};
+					const netflixState = state.netflixState[ip];
+					
+					if (netflixState && netflixState.status === 'testing') {
+						return '<span class="muted">检测中...</span>';
+					}
+					if (netflixState && netflixState.status === 'done') {
+						return `<span style="color:${netflixState.color}">${netflixState.result}</span> <button class="link-btn speed-test-btn" type="button" onclick="checkNetflixUnlock(this, '${escapeHtml(address)}')">重新检测</button>`;
+					}
+					return `<button class="link-btn speed-test-btn" type="button" onclick="checkNetflixUnlock(this, '${escapeHtml(address)}')"><span>检测</span></button>`;
+				}
 				function checkNetflixUnlock(btn, address) {
 					const span = btn.nextElementSibling;
 					btn.disabled = true;
 					btn.textContent = '检测中...';
 					span.textContent = '';
 					span.style.color = '';
+					
+					// 存储检测状态到 state
+					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
+					state.netflixState = state.netflixState || {};
+					state.netflixState[ip] = { status: 'testing', result: '' };
+					
 					const controller = new AbortController();
 					const timeout = setTimeout(() => controller.abort(), 10000);
 					fetch('https://www.netflix.com/title/80018499', {
@@ -13711,26 +13731,34 @@
 						signal: controller.signal
 					}).then(response => {
 						clearTimeout(timeout);
+						let result = '';
+						let color = '';
 						if (response.status === 200 || response.status === 302 || response.status === 301) {
 							const region = response.headers.get('cf-meta-country') || response.headers.get('x-nf-country') || '';
-							if (region) { span.textContent = '✅ 已解锁 ' + region; span.style.color = '#10b981'; }
-							else { span.textContent = '⚠️ 自制剧'; span.style.color = '#f59e0b'; }
+							if (region) { result = '✅ 已解锁 ' + region; color = '#10b981'; }
+							else { result = '⚠️ 自制剧'; color = '#f59e0b'; }
 						} else if (response.status === 403 || response.status === 451) {
-							span.textContent = '❌ 未解锁';
-							span.style.color = '#ef4444';
+							result = '❌ 未解锁';
+							color = '#ef4444';
 						} else {
-							span.textContent = '⚠️ 状态码: ' + response.status;
-							span.style.color = '#f59e0b';
+							result = '⚠️ 状态码: ' + response.status;
+							color = '#f59e0b';
 						}
+						state.netflixState[ip] = { status: 'done', result, color };
+						span.textContent = result;
+						span.style.color = color;
 						btn.disabled = false;
 						btn.textContent = '重新检测';
 					}).catch(err => {
 						clearTimeout(timeout);
+						let result = '';
 						if (err.name === 'AbortError') {
-							span.textContent = '❌ 超时';
+							result = '❌ 超时';
 						} else {
-							span.textContent = '❌ 失败: ' + err.message;
+							result = '❌ 失败';
 						}
+						state.netflixState[ip] = { status: 'done', result, color: '#ef4444' };
+						span.textContent = result;
 						span.style.color = '#ef4444';
 						btn.disabled = false;
 						btn.textContent = '重新检测';
