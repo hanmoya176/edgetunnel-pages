@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -11723,12 +11723,11 @@
 											<th style="width: 15%"><button class="sort-header" type="button"
 													data-sort="speed">速度(Mbps) <span class="sort-mark"
 														data-sort-mark="speed"></span></button></th>
-													<th style="width: 12%">解锁检测</th>
 										</tr>
 									</thead>
 									<tbody id="resultBody">
 										<tr>
-											<td class="empty" colspan="9">暂无结果</td>
+											<td class="empty" colspan="8">暂无结果</td>
 										</tr>
 									</tbody>
 								</table>
@@ -11774,8 +11773,7 @@
 			</div>
 
 			<script>
-				
-			function syncEmbeddedTheme() {
+				function syncEmbeddedTheme() {
 					try {
 						const parentDoc = window.parent && window.parent.document;
 						const parentDark = Boolean(parentDoc && (
@@ -12998,7 +12996,7 @@
 					syncOpenResultFilterMenu();
 					syncSelectionWithResults();
 					if (!state.results.length || !rows.length) {
-						els.resultBody.innerHTML = `<tr><td class="empty" colspan="9">${state.results.length ? "筛选后暂无结果" : "暂无结果"}</td></tr>`;
+						els.resultBody.innerHTML = `<tr><td class="empty" colspan="8">${state.results.length ? "筛选后暂无结果" : "暂无结果"}</td></tr>`;
 						updateSelectionState();
 						updateActionAvailability();
 						return;
@@ -13697,9 +13695,6 @@
 					if (rightEmpty) return -1;
 					return 0;
 				}
-
-				
-				
 
 				function renderSpeedCell(item, index) {
 					const isBatchTarget = Boolean(state.speedBatchDrag && state.speedBatchDrag.active && state.speedBatchDrag.seen.has(index));
