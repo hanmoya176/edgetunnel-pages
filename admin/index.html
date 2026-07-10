@@ -13698,15 +13698,9 @@
 				}
 
 				function renderNetflixCell(item, index) {
-					if (item.netflixState === "testing") {
-						return `<span class="muted">检测中...</span>`;
-					}
-					if (item.netflixState === "done") {
-						return `<strong style="color:${item.netflixColor}">${item.netflixResult}</strong>`;
-					}
-					if (item.netflixState === "failed") {
-						return `<button class="tag bad speed-retry-tag speed-test-btn" type="button" onclick="checkNetflixUnlock(${index})">失败</button>`;
-					}
+					if (item.netflixState === "testing") return '检测中...';
+					if (item.netflixState === "done") return item.netflixResult;
+					if (item.netflixState === "failed") return '失败';
 					return `<button class="link-btn speed-test-btn" type="button" onclick="checkNetflixUnlock(${index})"><span>检测</span></button>`;
 				}
 				function checkNetflixUnlock(index) {
@@ -13728,14 +13722,12 @@
 						clearTimeout(timeout);
 						if (response.status === 200 || response.status === 302 || response.status === 301) {
 							const region = response.headers.get('cf-meta-country') || response.headers.get('x-nf-country') || '';
-							if (region) { result.netflixResult = '✅ 已解锁 ' + region; result.netflixColor = '#10b981'; }
-							else { result.netflixResult = '⚠️ 自制剧'; result.netflixColor = '#f59e0b'; }
+							if (region) { result.netflixResult = '✅ 已解锁 ' + region; }
+							else { result.netflixResult = '⚠️ 自制剧'; }
 						} else if (response.status === 403 || response.status === 451) {
 							result.netflixResult = '❌ 未解锁';
-							result.netflixColor = '#ef4444';
 						} else {
 							result.netflixResult = '⚠️ 状态码: ' + response.status;
-							result.netflixColor = '#f59e0b';
 						}
 						result.netflixState = "done";
 						renderResults();
@@ -13746,7 +13738,6 @@
 						} else {
 							result.netflixResult = '❌ 失败';
 						}
-						result.netflixColor = '#ef4444';
 						result.netflixState = "failed";
 						renderResults();
 					});
