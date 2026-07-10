@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -11774,7 +11774,7 @@
 			</div>
 
 			<script>
-				const WORKER_BASE = window.parent.location.origin;
+				
 			function syncEmbeddedTheme() {
 					try {
 						const parentDoc = window.parent && window.parent.document;
@@ -13016,7 +13016,7 @@
 		  <td>${renderCountryCell(item.country)}</td>
 		  <td>${escapeHtml(item.colo || "未知")}</td>
 		  <td>${item.latency}ms</td>
-		  <td>${renderSpeedCell(item, index)}  <td>${renderNetflixCell(item, index)}</td>
+		  <td>${renderSpeedCell(item, index)}</td>
 		</tr>`;
 					}).join("");
 					updateSelectionState();
@@ -13698,33 +13698,8 @@
 					return 0;
 				}
 
-				function renderNetflixCell(item, index) {
-					if (item.netflixState === "testing") return '检测中...';
-					if (item.netflixState === "done") return item.netflixResult;
-					if (item.netflixState === "failed") return '失败';
-					return `<button class="link-btn speed-test-btn" type="button" onclick="checkNetflixUnlock(${index})"><span>检测</span></button>`;
-				}
-				function checkNetflixUnlock(index) {
-					const result = state.results[index];
-					if (!result || result.netflixState === "testing") return;
-					result.netflixState = "testing";
-					renderResults();
-					fetch(WORKER_BASE + '/admin/check-netflix?_t=' + Date.now(), { method: 'GET', headers: { 'Cookie': window.parent.document.cookie || '' }, cache: 'no-store' })
-						.then(r => r.json())
-						.then(data => {
-							if (data.error) { result.netflixResult = '❌ ' + data.error; result.netflixState = "failed"; }
-							else if (data.unlock === '全部解锁') { result.netflixResult = '✅ 全部解锁' + (data.region ? ' [' + data.region + ']' : ''); result.netflixState = "done"; }
-							else if (data.unlock === '自制剧') { result.netflixResult = '⚠️ 自制剧' + (data.region ? ' [' + data.region + ']' : ''); result.netflixState = "done"; }
-							else if (data.unlock === '未解锁') { result.netflixResult = '❌ 未解锁'; result.netflixState = "done"; }
-							else { result.netflixResult = '❓ ' + data.unlock; result.netflixState = "done"; }
-							renderResults();
-						})
-						.catch(err => {
-							result.netflixResult = '❌ 网络错误';
-							result.netflixState = "failed";
-							renderResults();
-						});
-				}
+				
+				
 
 				function renderSpeedCell(item, index) {
 					const isBatchTarget = Boolean(state.speedBatchDrag && state.speedBatchDrag.active && state.speedBatchDrag.seen.has(index));
