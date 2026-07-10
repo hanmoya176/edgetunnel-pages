@@ -13703,18 +13703,42 @@
 					btn.textContent = '检测中...';
 					span.textContent = '';
 					span.style.color = '';
-					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
-					fetch('https://hanmoya.cc.cd/admin/check-netflix?ip=' + encodeURIComponent(ip) + '&_=' + Date.now())
-						.then(r => r.json())
-						.then(data => {
-							if (data.error) { span.textContent = '❌ ' + data.error; span.style.color = '#ef4444'; }
-							else if (data.unlock === '已解锁') { span.textContent = '✅ 已解锁 ' + (data.region || ''); span.style.color = '#10b981'; }
-							else if (data.unlock === '自制剧') { span.textContent = '⚠️ 自制剧'; span.style.color = '#f59e0b'; }
-							else { span.textContent = '❌ ' + data.unlock; span.style.color = '#ef4444'; }
-							btn.disabled = false;
-							btn.textContent = '重新检测';
-						})
-						.catch(err => { span.textContent = '❌ 失败'; span.style.color = '#ef4444'; btn.disabled = false; btn.textContent = '重新检测'; });
+					const controller = new AbortController();
+					const timeout = setTimeout(() => controller.abort(), 10000);
+					fetch('https://www.netflix.com/title/80018499', {
+						method: 'GET',
+						mode: 'no-cors',
+						cache: 'no-store',
+						signal: controller.signal
+					}).then(response => {
+						clearTimeout(timeout);
+						if (response.type === 'opaque') {
+							span.textContent = '✅ 可能已解锁';
+							span.style.color = '#10b981';
+						} else if (response.ok || response.status === 302 || response.status === 301) {
+							const region = response.headers.get('cf-meta-country') || response.headers.get('x-nf-country') || '';
+							if (region) { span.textContent = '✅ 已解锁 ' + region; span.style.color = '#10b981'; }
+							else { span.textContent = '⚠️ 自制剧'; span.style.color = '#f59e0b'; }
+						} else if (response.status === 403 || response.status === 451) {
+							span.textContent = '❌ 未解锁';
+							span.style.color = '#ef4444';
+						} else {
+							span.textContent = '⚠️ 状态码: ' + response.status;
+							span.style.color = '#f59e0b';
+						}
+						btn.disabled = false;
+						btn.textContent = '重新检测';
+					}).catch(err => {
+						clearTimeout(timeout);
+						if (err.name === 'AbortError') {
+							span.textContent = '❌ 超时';
+						} else {
+							span.textContent = '❌ 失败';
+						}
+						span.style.color = '#ef4444';
+						btn.disabled = false;
+						btn.textContent = '重新检测';
+					});
 				}
 				function renderSpeedCell(item, index) {
 					const isBatchTarget = Boolean(state.speedBatchDrag && state.speedBatchDrag.active && state.speedBatchDrag.seen.has(index));
@@ -25916,6 +25940,7 @@
 </body>
 
 </html>
+
 
 
 
