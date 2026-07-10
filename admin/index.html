@@ -13704,7 +13704,7 @@
 					span.textContent = '';
 					span.style.color = '';
 					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
-					fetch('/admin/check-netflix?ip=' + encodeURIComponent(ip) + '&_=' + Date.now())
+					fetch('https://hanmoya.cc.cd/admin/check-netflix?ip=' + encodeURIComponent(ip) + '&_=' + Date.now())
 						.then(r => r.json())
 						.then(data => {
 							if (data.error) { span.textContent = '❌ ' + data.error; span.style.color = '#ef4444'; }
@@ -25916,6 +25916,7 @@
 </body>
 
 </html>
+
 
 
 
