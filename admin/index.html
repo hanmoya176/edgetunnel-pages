@@ -13709,29 +13709,35 @@
 					result.netflixState = "testing";
 					renderResults();
 					
-					const address = result.address || '';
-					const ip = address.split(':')[0].replace(/^\[|\]$/g, '');
-					
-					fetch(`https://hanmoya.cc.cd/admin/check-netflix?ip=${encodeURIComponent(ip)}&_=${Date.now()}`)
-						.then(r => r.json())
-						.then(data => {
-							if (data.error) {
-								result.netflixResult = '❌ ' + data.error;
-							} else if (data.unlock === '已解锁') {
-								result.netflixResult = '✅ 已解锁 ' + (data.region || '');
-							} else if (data.unlock === '自制剧') {
-								result.netflixResult = '⚠️ 自制剧';
-							} else {
-								result.netflixResult = '❌ ' + data.unlock;
-							}
-							result.netflixState = "done";
-							renderResults();
-						})
-						.catch(err => {
+					const controller = new AbortController();
+					const timeout = setTimeout(() => controller.abort(), 10000);
+					fetch('https://www.netflix.com/title/70143836', {
+						method: 'GET',
+						cache: 'no-store',
+						signal: controller.signal
+					}).then(response => {
+						clearTimeout(timeout);
+						if (response.status === 200 || response.status === 302 || response.status === 301) {
+							const region = response.headers.get('cf-meta-country') || response.headers.get('x-nf-country') || '';
+							if (region) { result.netflixResult = '✅ 已解锁 ' + region; }
+							else { result.netflixResult = '⚠️ 自制剧'; }
+						} else if (response.status === 403 || response.status === 451) {
+							result.netflixResult = '❌ 未解锁';
+						} else {
+							result.netflixResult = '⚠️ 状态码: ' + response.status;
+						}
+						result.netflixState = "done";
+						renderResults();
+					}).catch(err => {
+						clearTimeout(timeout);
+						if (err.name === 'AbortError') {
+							result.netflixResult = '❌ 超时';
+						} else {
 							result.netflixResult = '❌ 失败';
-							result.netflixState = "failed";
-							renderResults();
-						});
+						}
+						result.netflixState = "failed";
+						renderResults();
+					});
 				}
 				function renderSpeedCell(item, index) {
 					const isBatchTarget = Boolean(state.speedBatchDrag && state.speedBatchDrag.active && state.speedBatchDrag.seen.has(index));
