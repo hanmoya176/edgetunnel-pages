@@ -1,8 +1,8 @@
-const Version = '2026-06-17 01:41:21';
+﻿const Version = '2026-06-17 01:41:21';
 let config_JSON, 反代IP = '', 启用SOCKS5反代 = null, 启用SOCKS5全局反代 = false, 我的SOCKS5账号 = '', parsedSocks5Address = {};
 let 缓存SOCKS5白名单 = null, 缓存反代IP, 缓存反代解析数组, 缓存反代数组索引 = 0, 启用反代兜底 = true, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
-const Pages静态页面 = 'https://hanmoya176.github.io/edgetunnel-pages';
+const Pages静态页面 = 'https://edt-pages.github.io';
 ///////////////////////////////////////////////////////全局常量和工具函数///////////////////////////////////////////////
 const WS早期数据最大字节 = 8 * 1024, WS早期数据最大头长度 = Math.ceil(WS早期数据最大字节 * 4 / 3) + 4;
 const 上行合包目标字节 = 16 * 1024, 上行队列最大字节 = 16 * 1024 * 1024, 上行队列最大条目 = 4096;
@@ -200,34 +200,6 @@ export default {
 							检测代理响应 = { success: false, error: err.message, proxy: 代理协议 + "://" + 代理参数, responseTime: Date.now() - startTime };
 						}
 						return new Response(JSON.stringify(检测代理响应, null, 2), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
-					} else if (访问路径 === 'admin/check-netflix') {// Netflix解锁检测
-						const startTime = Date.now();
-						const netflixUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-						const netflixHeaders = { 'User-Agent': netflixUA, 'Accept-Language': 'en-US,en;q=0.9' };
-						try {
-							let unlock = '未知', region = '';
-							const [fullResp, selfResp] = await Promise.allSettled([
-								fetch('https://www.netflix.com/title/70143836', { method: 'GET', headers: netflixHeaders, redirect: 'follow', signal: AbortSignal.timeout(10000) }),
-								fetch('https://www.netflix.com/title/80018263', { method: 'GET', headers: netflixHeaders, redirect: 'follow', signal: AbortSignal.timeout(10000) })
-							]);
-							const fullOk = fullResp.status === 'fulfilled' && fullResp.value.status === 200;
-							const selfOk = selfResp.status === 'fulfilled' && selfResp.value.status === 200;
-							if (fullOk) {
-								const html = await fullResp.value.text();
-								region = fullResp.value.headers.get('cf-meta-country') || fullResp.value.headers.get('x-nf-country') || '';
-								if (html.includes('Not Available') || html.includes('unavailable') || html.includes('not available in your area')) unlock = selfOk ? '自制剧' : '未解锁';
-								else if (html.includes('season') || html.includes('episode') || html.includes('Breaking Bad')) unlock = '全部解锁';
-								else unlock = selfOk ? '自制剧' : '未解锁';
-							} else if (selfOk) {
-								region = selfResp.value.headers.get('cf-meta-country') || selfResp.value.headers.get('x-nf-country') || '';
-								unlock = '自制剧';
-							} else {
-								unlock = '未解锁';
-							}
-							return new Response(JSON.stringify({ unlock, region, time: Date.now() - startTime }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
-						} catch (err) {
-							return new Response(JSON.stringify({ error: '检测失败: ' + err.message, unlock: '检测失败', time: Date.now() - startTime }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
-						}
 					}
 
 					config_JSON = await 读取config_JSON(env, host, userID, UA);
