@@ -11774,7 +11774,8 @@
 			</div>
 
 			<script>
-				function syncEmbeddedTheme() {
+				const WORKER_BASE = window.parent.location.origin;
+			function syncEmbeddedTheme() {
 					try {
 						const parentDoc = window.parent && window.parent.document;
 						const parentDark = Boolean(parentDoc && (
@@ -13708,7 +13709,7 @@
 					if (!result || result.netflixState === "testing") return;
 					result.netflixState = "testing";
 					renderResults();
-					fetch('/admin/check-netflix?_t=' + Date.now(), { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+					fetch(WORKER_BASE + '/admin/check-netflix?_t=' + Date.now(), { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
 						.then(r => r.json())
 						.then(data => {
 							if (data.error) { result.netflixResult = '❌ ' + data.error; result.netflixState = "failed"; }
