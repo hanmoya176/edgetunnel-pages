@@ -13708,21 +13708,32 @@
 					if (!result || result.netflixState === "testing") return;
 					result.netflixState = "testing";
 					renderResults();
-					fetch('/admin/check-netflix?_=${Date.now()}')
-						.then(r => r.json())
-						.then(data => {
-							if (data.error) { result.netflixResult = '❌ ' + data.error; }
-							else if (data.unlock === '已解锁') { result.netflixResult = '✅ 已解锁 ' + (data.region || ''); }
-							else if (data.unlock === '自制剧') { result.netflixResult = '⚠️ 自制剧'; }
-							else { result.netflixResult = '❌ ' + data.unlock; }
-							result.netflixState = "done";
-							renderResults();
-						})
-						.catch(err => {
+					const controller = new AbortController();
+					const timeout = setTimeout(() => controller.abort(), 10000);
+					fetch('https://www.netflix.com/title/70143836', {
+						method: 'GET',
+						mode: 'no-cors',
+						cache: 'no-store',
+						signal: controller.signal
+					}).then(response => {
+						clearTimeout(timeout);
+						if (response.type === 'opaque') {
+							result.netflixResult = '✅ 已解锁';
+						} else {
+							result.netflixResult = '❌ 未解锁';
+						}
+						result.netflixState = "done";
+						renderResults();
+					}).catch(err => {
+						clearTimeout(timeout);
+						if (err.name === 'AbortError') {
+							result.netflixResult = '❌ 超时';
+						} else {
 							result.netflixResult = '❌ 失败';
-							result.netflixState = "failed";
-							renderResults();
-						});
+						}
+						result.netflixState = "failed";
+						renderResults();
+					});
 				}
 
 				function renderSpeedCell(item, index) {
