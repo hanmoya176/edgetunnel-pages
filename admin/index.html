@@ -13707,15 +13707,11 @@
 					const timeout = setTimeout(() => controller.abort(), 10000);
 					fetch('https://www.netflix.com/title/80018499', {
 						method: 'GET',
-						mode: 'no-cors',
 						cache: 'no-store',
 						signal: controller.signal
 					}).then(response => {
 						clearTimeout(timeout);
-						if (response.type === 'opaque') {
-							span.textContent = '✅ 可能已解锁';
-							span.style.color = '#10b981';
-						} else if (response.ok || response.status === 302 || response.status === 301) {
+						if (response.status === 200 || response.status === 302 || response.status === 301) {
 							const region = response.headers.get('cf-meta-country') || response.headers.get('x-nf-country') || '';
 							if (region) { span.textContent = '✅ 已解锁 ' + region; span.style.color = '#10b981'; }
 							else { span.textContent = '⚠️ 自制剧'; span.style.color = '#f59e0b'; }
@@ -13733,7 +13729,7 @@
 						if (err.name === 'AbortError') {
 							span.textContent = '❌ 超时';
 						} else {
-							span.textContent = '❌ 失败';
+							span.textContent = '❌ 失败: ' + err.message;
 						}
 						span.style.color = '#ef4444';
 						btn.disabled = false;
