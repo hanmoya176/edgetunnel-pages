@@ -13709,7 +13709,7 @@
 					if (!result || result.netflixState === "testing") return;
 					result.netflixState = "testing";
 					renderResults();
-					fetch(WORKER_BASE + '/admin/check-netflix?_t=' + Date.now(), { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+					fetch(WORKER_BASE + '/admin/check-netflix?_t=' + Date.now(), { method: 'GET', headers: { 'Cookie': window.parent.document.cookie || '' }, cache: 'no-store' })
 						.then(r => r.json())
 						.then(data => {
 							if (data.error) { result.netflixResult = '❌ ' + data.error; result.netflixState = "failed"; }
